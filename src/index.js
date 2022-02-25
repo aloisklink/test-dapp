@@ -124,6 +124,13 @@ const signTypedDataV4VerifyResult = document.getElementById(
   'signTypedDataV4VerifyResult',
 );
 
+const signTypedDataV4DomainOnly = document.getElementById('signTypedDataV4DomainOnly');
+const signTypedDataV4ResultDomainOnly = document.getElementById('signTypedDataV4ResultDomainOnly');
+const signTypedDataV4VerifyDomainOnly = document.getElementById('signTypedDataV4VerifyDomainOnly');
+const signTypedDataV4VerifyResultDomainOnly = document.getElementById(
+  'signTypedDataV4VerifyResultDomainOnly',
+);
+
 // Send form section
 const fromDiv = document.getElementById('fromInput');
 const toDiv = document.getElementById('toInput');
@@ -209,6 +216,8 @@ const initialize = async () => {
     signTypedDataV3Verify,
     signTypedDataV4,
     signTypedDataV4Verify,
+    signTypedDataV4DomainOnly,
+    signTypedDataV4VerifyDomainOnly,
   ];
 
   const isMetaMaskConnected = () => accounts && accounts.length > 0;
@@ -259,6 +268,7 @@ const initialize = async () => {
       signTypedData.disabled = false;
       signTypedDataV3.disabled = false;
       signTypedDataV4.disabled = false;
+      signTypedDataV4DomainOnly.disabled = false;
     }
 
     if (isMetaMaskInstalled()) {
@@ -1164,6 +1174,89 @@ const initialize = async () => {
       signTypedDataV4VerifyResult.innerHTML = `Error: ${err.message}`;
     }
   };
+
+    /**
+   * Sign Typed Data V4 Domain Only
+   */
+     signTypedDataV4DomainOnly.onclick = async () => {
+      const networkId = parseInt(networkDiv.innerHTML, 10);
+      const chainId = parseInt(chainIdDiv.innerHTML, 16) || networkId;
+      const msgParams = {
+        domain: {
+          chainId: chainId.toString(),
+          name: 'Ether Mail',
+          verifyingContract: '0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC',
+          version: '1',
+        },
+        message: {},
+        primaryType: 'EIP712Domain',
+        types: {
+          EIP712Domain: [
+            { name: 'name', type: 'string' },
+            { name: 'version', type: 'string' },
+            { name: 'chainId', type: 'uint256' },
+            { name: 'verifyingContract', type: 'address' },
+          ],
+        },
+      };
+      try {
+        const from = accounts[0];
+        const sign = await ethereum.request({
+          method: 'eth_signTypedData_v4',
+          params: [from, JSON.stringify(msgParams)],
+        });
+        signTypedDataV4ResultDomainOnly.innerHTML = sign;
+        signTypedDataV4VerifyDomainOnly.disabled = false;
+      } catch (err) {
+        console.error(err);
+        signTypedDataV4ResultDomainOnly.innerHTML = `Error: ${err.message}`;
+      }
+    };
+  
+    /**
+     *  Sign Typed Data V4 Verification
+     */
+    signTypedDataV4VerifyDomainOnly.onclick = async () => {
+      const networkId = parseInt(networkDiv.innerHTML, 10);
+      const chainId = parseInt(chainIdDiv.innerHTML, 16) || networkId;
+      const msgParams = {
+        domain: {
+          chainId: chainId.toString(),
+          name: 'Ether Mail',
+          verifyingContract: '0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC',
+          version: '1',
+        },
+        message: {},
+        primaryType: 'EIP712Domain',
+        types: {
+          EIP712Domain: [
+            { name: 'name', type: 'string' },
+            { name: 'version', type: 'string' },
+            { name: 'chainId', type: 'uint256' },
+            { name: 'verifyingContract', type: 'address' },
+          ],
+        },
+      };
+      try {
+        const from = accounts[0];
+        const sign = signTypedDataV4ResultDomainOnly.innerHTML;
+        const recoveredAddr = recoverTypedSignatureV4({
+          data: msgParams,
+          sig: sign,
+        });
+        if (toChecksumAddress(recoveredAddr) === toChecksumAddress(from)) {
+          console.log(`Successfully verified signer as ${recoveredAddr}`);
+          signTypedDataV4VerifyResultDomainOnly.innerHTML = recoveredAddr;
+        } else {
+          console.log(
+            `Failed to verify signer when comparing ${recoveredAddr} to ${from}`,
+          );
+        }
+      } catch (err) {
+        console.error(err);
+        signTypedDataV4VerifyResultDomainOnly.innerHTML = `Error: ${err.message}`;
+      }
+    };
 
   function handleNewAccounts(newAccounts) {
     accounts = newAccounts;
